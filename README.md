@@ -14,9 +14,11 @@ gebaut mit **Kotlin**, **Jetpack Compose** und **Material 3**.
   - Anzahl nutzbarer Hosts und Gesamtadressen
   - Netzmaske, Wildcard-Maske und Binärdarstellung
   - Adresstyp (Privat/Öffentlich/Loopback/APIPA/CGN/…) und Adressklasse (A–E)
-- **Alle möglichen Subnetze**: Das eingegebene Netz lässt sich per Slider in
-  kleinere Subnetze aufteilen — die App listet jedes Subnetz mit Netzadresse,
-  Host-Bereich und Broadcast auf (performant auch bei zehntausenden Subnetzen).
+- **Alle möglichen Subnetze**: Das eingegebene Netz lässt sich aufteilen —
+  wahlweise per Slider über die neue Präfixlänge **oder über die Anzahl
+  benötigter Hosts pro Subnetz** (die App ermittelt dann das kleinste passende
+  Subnetz). Jedes Subnetz wird mit Netzadresse, Host-Bereich und Broadcast
+  aufgelistet (performant auch bei zehntausenden Subnetzen).
 - Sonderfälle korrekt behandelt: `/31` (RFC 3021, Punkt-zu-Punkt) und `/32`
   (Hostroute).
 - **Modernes Design**: Material 3, dynamische Farben (Android 12+),

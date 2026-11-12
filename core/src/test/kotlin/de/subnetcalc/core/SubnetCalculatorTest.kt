@@ -165,6 +165,46 @@ class SubnetCalculatorTest {
         assertEquals(ip("10.255.255.255"), last.broadcast)
     }
 
+    // ---- Hosts -> Präfix ----
+
+    @Test
+    fun `liefert nutzbare Hosts je Praefix`() {
+        assertEquals(1L, SC.usableHosts(32))
+        assertEquals(2L, SC.usableHosts(31))
+        assertEquals(2L, SC.usableHosts(30))
+        assertEquals(6L, SC.usableHosts(29))
+        assertEquals(254L, SC.usableHosts(24))
+        assertEquals(65_534L, SC.usableHosts(16))
+        assertEquals(4_294_967_294L, SC.usableHosts(0))
+    }
+
+    @Test
+    fun `findet kleinstes Subnetz fuer benoetigte Hostanzahl`() {
+        assertEquals(32, SC.prefixForHosts(1))
+        assertEquals(31, SC.prefixForHosts(2))   // RFC 3021 Punkt-zu-Punkt
+        assertEquals(29, SC.prefixForHosts(3))   // /30 bietet nur 2 nutzbare Hosts
+        assertEquals(29, SC.prefixForHosts(6))
+        assertEquals(28, SC.prefixForHosts(7))
+        assertEquals(28, SC.prefixForHosts(14))
+        assertEquals(27, SC.prefixForHosts(15))
+        assertEquals(26, SC.prefixForHosts(62))
+        assertEquals(25, SC.prefixForHosts(100))
+        assertEquals(25, SC.prefixForHosts(126))
+        assertEquals(24, SC.prefixForHosts(127))
+        assertEquals(24, SC.prefixForHosts(254))
+        assertEquals(23, SC.prefixForHosts(255))
+        assertEquals(16, SC.prefixForHosts(65_534))
+        assertEquals(8, SC.prefixForHosts(16_777_214))
+        assertEquals(0, SC.prefixForHosts(4_294_967_294L))
+    }
+
+    @Test
+    fun `lehnt unmoegliche Hostanzahlen ab`() {
+        assertNull(SC.prefixForHosts(0))
+        assertNull(SC.prefixForHosts(-5))
+        assertNull(SC.prefixForHosts(4_294_967_295L))
+    }
+
     // ---- Klassifizierung ----
 
     @Test

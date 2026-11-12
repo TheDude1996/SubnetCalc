@@ -83,6 +83,27 @@ object SubnetCalculator {
     fun broadcastAddress(ip: Long, prefix: Int): Long =
         networkAddress(ip, prefix) or (prefixToMask(prefix).inv() and 0xFFFFFFFFL)
 
+    /** Nutzbare Hosts je Subnetz für eine Präfixlänge (/31 nach RFC 3021, /32 Hostroute). */
+    fun usableHosts(prefix: Int): Long = when {
+        prefix >= 32 -> 1L
+        prefix == 31 -> 2L
+        else -> (1L shl (32 - prefix)) - 2
+    }
+
+    /**
+     * Längster Präfix (= kleinstes Subnetz), dessen Subnetze mindestens
+     * [hosts] nutzbare Hosts bieten. 1 Host -> /32, 2 Hosts -> /31 (RFC 3021),
+     * 3 Hosts -> /29 usw. Liefert null, wenn die Anzahl ungültig ist oder
+     * nicht einmal in /0 passt.
+     */
+    fun prefixForHosts(hosts: Long): Int? {
+        if (hosts < 1) return null
+        for (prefix in 32 downTo 0) {
+            if (usableHosts(prefix) >= hosts) return prefix
+        }
+        return null
+    }
+
     /** Berechnet alle Kennwerte des Subnetzes, in dem die Adresse liegt. */
     fun calculate(ip: Long, prefix: Int): SubnetInfo {
         val mask = prefixToMask(prefix)
@@ -90,10 +111,10 @@ object SubnetCalculator {
         val wildcard = mask.inv() and 0xFFFFFFFFL
         val broadcast = network or wildcard
         val total = 1L shl (32 - prefix)
-        val (first, last, usable) = when {
-            prefix >= 32 -> Triple(network, network, 1L)
-            prefix == 31 -> Triple(network, broadcast, 2L) // RFC 3021: Punkt-zu-Punkt
-            else -> Triple(network + 1, broadcast - 1, total - 2)
+        val usable = usableHosts(prefix)
+        val (first, last) = when {
+            prefix >= 31 -> Pair(network, broadcast)
+            else -> Pair(network + 1, broadcast - 1)
         }
         return SubnetInfo(
             ip = ip,

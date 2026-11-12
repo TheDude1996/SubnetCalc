@@ -26,6 +26,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -61,6 +64,8 @@ fun SubnetScreen() {
     var ipText by rememberSaveable { mutableStateOf("192.168.1.0") }
     var maskText by rememberSaveable { mutableStateOf("/24") }
     var splitPrefix by rememberSaveable { mutableIntStateOf(26) }
+    var byHosts by rememberSaveable { mutableStateOf(false) }
+    var hostsText by rememberSaveable { mutableStateOf("") }
 
     val ip = SubnetCalculator.parseIpv4(ipText)
     val prefix = SubnetCalculator.parsePrefixOrMask(maskText)
@@ -111,36 +116,59 @@ fun SubnetScreen() {
                 item(key = "result") { ResultCard(info) }
 
                 if (info.prefix < 32) {
-                    val effSplit = splitPrefix.coerceIn(info.prefix, 32)
-                    val count = SubnetCalculator.subnetCount(info.prefix, effSplit)
-                    val perSubnet = SubnetCalculator.calculate(info.network, effSplit).usableHosts
+                    val hostsRequired = hostsText.trim().toLongOrNull()
+                    val hostsPrefix = hostsRequired?.let { SubnetCalculator.prefixForHosts(it) }
+                    val hostsError: String? = when {
+                        !byHosts || hostsText.isBlank() -> null
+                        hostsRequired == null || hostsPrefix == null ->
+                            "Ungültige Anzahl (1 bis ${fmt(4_294_967_294L)})"
+                        hostsPrefix < info.prefix ->
+                            "Passt nicht in /${info.prefix} – dort sind höchstens " +
+                                "${fmt(info.usableHosts)} Hosts möglich"
+                        else -> null
+                    }
+                    val effSplit: Int? = if (byHosts) {
+                        if (hostsText.isNotBlank() && hostsError == null) hostsPrefix else null
+                    } else {
+                        splitPrefix.coerceIn(info.prefix, 32)
+                    }
+                    val count = effSplit?.let { SubnetCalculator.subnetCount(info.prefix, it) }
+                    val perSubnet = effSplit?.let { SubnetCalculator.usableHosts(it) }
 
                     item(key = "split") {
                         SplitCard(
                             parentPrefix = info.prefix,
-                            splitPrefix = effSplit,
+                            byHosts = byHosts,
+                            onModeChange = { byHosts = it },
+                            splitPrefix = splitPrefix.coerceIn(info.prefix, 32),
                             onSplitChange = { splitPrefix = it },
+                            hostsText = hostsText,
+                            onHostsChange = { hostsText = it },
+                            hostsError = hostsError,
+                            resolvedPrefix = effSplit,
                             count = count,
                             hostsPerSubnet = perSubnet,
                         )
                     }
 
-                    val shown = minOf(count, MAX_ROWS.toLong()).toInt()
-                    items(count = shown, key = { it }) { index ->
-                        SubnetRow(
-                            index = index,
-                            sub = SubnetCalculator.subnetAt(info.network, effSplit, index.toLong()),
-                        )
-                    }
-                    if (count > shown) {
-                        item(key = "more") {
-                            Text(
-                                text = "… und ${fmt(count - shown)} weitere Subnetze " +
-                                    "(Anzeige auf ${fmt(shown.toLong())} begrenzt)",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(vertical = 8.dp),
+                    if (effSplit != null && count != null) {
+                        val shown = minOf(count, MAX_ROWS.toLong()).toInt()
+                        items(count = shown, key = { it }) { index ->
+                            SubnetRow(
+                                index = index,
+                                sub = SubnetCalculator.subnetAt(info.network, effSplit, index.toLong()),
                             )
+                        }
+                        if (count > shown) {
+                            item(key = "more") {
+                                Text(
+                                    text = "… und ${fmt(count - shown)} weitere Subnetze " +
+                                        "(Anzeige auf ${fmt(shown.toLong())} begrenzt)",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                )
+                            }
                         }
                     }
                 }
@@ -288,13 +316,20 @@ private fun ResultRow(label: String, value: String, small: Boolean = false) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SplitCard(
     parentPrefix: Int,
+    byHosts: Boolean,
+    onModeChange: (Boolean) -> Unit,
     splitPrefix: Int,
     onSplitChange: (Int) -> Unit,
-    count: Long,
-    hostsPerSubnet: Long,
+    hostsText: String,
+    onHostsChange: (String) -> Unit,
+    hostsError: String?,
+    resolvedPrefix: Int?,
+    count: Long?,
+    hostsPerSubnet: Long?,
 ) {
     Card(
         shape = RoundedCornerShape(20.dp),
@@ -308,32 +343,70 @@ private fun SplitCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Neue Präfixlänge: /$splitPrefix — ${fmt(count)} " +
-                    (if (count == 1L) "Subnetz" else "Subnetze") +
-                    " mit je ${fmt(hostsPerSubnet)} nutzbaren Hosts",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Slider(
-                value = splitPrefix.toFloat(),
-                onValueChange = { onSplitChange(it.roundToInt()) },
-                valueRange = parentPrefix.toFloat()..32f,
-                steps = (32 - parentPrefix - 1).coerceAtLeast(0),
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    "/$parentPrefix",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Spacer(Modifier.height(10.dp))
+
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                SegmentedButton(
+                    selected = !byHosts,
+                    onClick = { onModeChange(false) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                ) { Text("Nach Präfix") }
+                SegmentedButton(
+                    selected = byHosts,
+                    onClick = { onModeChange(true) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                ) { Text("Nach Hosts") }
+            }
+            Spacer(Modifier.height(12.dp))
+
+            if (byHosts) {
+                OutlinedTextField(
+                    value = hostsText,
+                    onValueChange = onHostsChange,
+                    label = { Text("Benötigte Hosts pro Subnetz") },
+                    placeholder = { Text("z. B. 50") },
+                    isError = hostsError != null,
+                    supportingText = { if (hostsError != null) Text(hostsError) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
                 )
+            } else {
+                Slider(
+                    value = splitPrefix.toFloat(),
+                    onValueChange = { onSplitChange(it.roundToInt()) },
+                    valueRange = parentPrefix.toFloat()..32f,
+                    steps = (32 - parentPrefix - 1).coerceAtLeast(0),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        "/$parentPrefix",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "/32",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            if (resolvedPrefix != null && count != null && hostsPerSubnet != null) {
+                val suffix = when (resolvedPrefix) {
+                    31 -> " — /31: Punkt-zu-Punkt (RFC 3021)"
+                    32 -> " — /32: Hostroute"
+                    else -> ""
+                }
+                Spacer(Modifier.height(4.dp))
                 Text(
-                    "/32",
-                    style = MaterialTheme.typography.labelMedium,
+                    text = "→ /$resolvedPrefix (${SubnetCalculator.ipToString(SubnetCalculator.prefixToMask(resolvedPrefix))}): " +
+                        "${fmt(count)} " + (if (count == 1L) "Subnetz" else "Subnetze") +
+                        " mit je ${fmt(hostsPerSubnet)} nutzbaren Hosts$suffix",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
