@@ -142,6 +142,14 @@ object SubnetCalculator {
         return calculate(net, newPrefix)
     }
 
+    /** Anzahl der führenden Bits, in denen beide Adressen übereinstimmen (0–32). */
+    fun commonPrefixLength(a: Long, b: Long): Int =
+        java.lang.Long.numberOfLeadingZeros((a xor b) and 0xFFFFFFFFL) - 32
+
+    /** Liegen beide Adressen bei dieser Präfixlänge im selben Netz? */
+    fun sameNetwork(a: Long, b: Long, prefix: Int): Boolean =
+        networkAddress(a, prefix) == networkAddress(b, prefix)
+
     /** Historische Adressklasse (A–E). */
     fun ipClass(ip: Long): Char {
         val firstOctet = (ip shr 24) and 0xFF

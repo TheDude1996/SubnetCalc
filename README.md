@@ -1,10 +1,17 @@
 # Subnetz-Rechner (SubnetCalc)
 
-Eine moderne Android-App zur IPv4-Subnetz-Berechnung für den IT-Alltag —
+Eine moderne Android-App zur Subnetz-Berechnung für IPv4 und IPv6 für den IT-Alltag —
 gebaut mit **Kotlin**, **Jetpack Compose** und **Material 3**.
 
 ## Funktionen
 
+- **IPv4 und IPv6**: Die IP-Version wird automatisch an der Eingabe erkannt.
+  Für IPv6 gibt es Kurz- und Langschreibweise, erste/letzte Adresse,
+  Adressanzahl, Adresstyp (Global Unicast, Unique Local, Link-Local, …) und
+  die Aufteilung in Subnetze.
+- **Gleiches Netz?**: Zwei Adressen und eine Netzmaske eingeben — die App
+  sagt, ob beide im selben Netz liegen, zeigt die abweichenden Bits und ab
+  welcher Präfixlänge sich das Ergebnis ändert.
 - **Eingabe von IP-Adresse und Netzmaske** — die Maske wahlweise als
   CIDR-Präfix (`24`, `/24`) oder in Punktnotation (`255.255.255.0`),
   mit Schnellauswahl-Chips für gängige Präfixe.
