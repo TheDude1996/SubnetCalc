@@ -48,7 +48,13 @@ Die APK liegt danach unter `app/build/outputs/apk/debug/app-debug.apk`.
 ## CI
 
 Bei jedem Push baut GitHub Actions die App, führt die Unit-Tests aus und lädt
-die Debug-APK als Artefakt hoch (Actions → Lauf auswählen → Artifacts →
-`SubnetCalc-debug`).
+die signierte Release-APK als Artefakt hoch (Actions → Lauf auswählen →
+Artifacts → `SubnetCalc-release`). Die Versionsnummer zählt mit jedem Lauf
+hoch, sodass sich jede APK als Update über die vorherige installieren lässt.
+
+Die Signatur stammt aus vier Repository-Secrets (Settings → Secrets and
+variables → Actions): `KEYSTORE_BASE64` (Keystore, Base64-kodiert),
+`KEYSTORE_PASSWORD`, `KEY_ALIAS` und `KEY_PASSWORD`. Fehlen sie (etwa in
+Forks), baut CI ersatzweise eine Debug-APK `SubnetCalc-debug`.
 
 Mindest-Android-Version: 8.0 (API 26).

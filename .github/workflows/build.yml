@@ -8,6 +8,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,10 +29,30 @@ jobs:
       - name: Unit-Tests ausführen
         run: ./gradlew :core:test
 
-      - name: Debug-APK bauen
+      - name: Release-Keystore aus Secret wiederherstellen
+        if: env.KEYSTORE_BASE64 != ''
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Release-APK bauen
+        run: ./gradlew :app:assembleRelease
+
+      - name: Signierte Release-APK hochladen
+        if: env.KEYSTORE_FILE != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: SubnetCalc-release
+          path: app/build/outputs/apk/release/app-release.apk
+
+      # Ohne Secrets (z. B. in Forks) gibt es ersatzweise eine Debug-APK,
+      # die sich aber nicht als Update installieren lässt.
+      - name: Debug-APK bauen (ohne Signatur-Secrets)
+        if: env.KEYSTORE_FILE == ''
         run: ./gradlew :app:assembleDebug
 
-      - name: APK hochladen
+      - name: Debug-APK hochladen (ohne Signatur-Secrets)
+        if: env.KEYSTORE_FILE == ''
         uses: actions/upload-artifact@v4
         with:
           name: SubnetCalc-debug
