@@ -21,8 +21,11 @@ gebaut mit **Kotlin**, **Jetpack Compose** und **Material 3**.
   aufgelistet (performant auch bei zehntausenden Subnetzen).
 - Sonderfälle korrekt behandelt: `/31` (RFC 3021, Punkt-zu-Punkt) und `/32`
   (Hostroute).
-- **Modernes Design**: Material 3, dynamische Farben (Android 12+),
-  automatischer Hell-/Dunkelmodus, Edge-to-Edge.
+- **Eigenes „Neon Ops“-Design**: durchgehend dunkle Mitternachtsblau-Töne mit
+  Neon-Grün- und Neon-Pink-Akzenten — Verlaufshintergrund, leuchtende
+  Gradient-Rahmen mit Puls-Animation, Monospace-Typografie und eine
+  **Bit-Visualisierung**, die Netzanteil (grün) und Hostanteil (pink) der
+  Adresse bitgenau zeigt. Material 3, Edge-to-Edge.
 
 ## Aufbau
 

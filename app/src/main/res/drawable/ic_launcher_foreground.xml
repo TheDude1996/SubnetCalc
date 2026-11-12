@@ -8,23 +8,23 @@
     <!-- Verbindungslinien -->
     <path
         android:pathData="M54,44 L38,64 M54,44 L70,64 M54,44 L54,68"
-        android:strokeColor="#8AB4F8"
+        android:strokeColor="#4D8DFF"
         android:strokeWidth="3"
         android:strokeLineCap="round" />
 
-    <!-- Zentraler Knoten -->
+    <!-- Zentraler Knoten (Neon-Grün) -->
     <path
         android:pathData="M54,36 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0"
-        android:fillColor="#FFFFFF" />
+        android:fillColor="#00FFA3" />
 
-    <!-- Untere Knoten -->
+    <!-- Untere Knoten (Neon-Pink / Blau) -->
     <path
         android:pathData="M38,68 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0"
-        android:fillColor="#8AB4F8" />
+        android:fillColor="#FF2E97" />
     <path
         android:pathData="M70,68 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0"
-        android:fillColor="#8AB4F8" />
+        android:fillColor="#FF2E97" />
     <path
         android:pathData="M54,72 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0"
-        android:fillColor="#C2E7FF" />
+        android:fillColor="#4D8DFF" />
 </vector>
