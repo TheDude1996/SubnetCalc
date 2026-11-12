@@ -1,74 +1,77 @@
 package de.subnetcalc.app.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 
-private val LightColors = lightColorScheme(
-    primary = Color(0xFF2A5CBE),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFD8E2FF),
-    onPrimaryContainer = Color(0xFF001A43),
-    secondary = Color(0xFF00696E),
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFF9CF1F6),
-    onSecondaryContainer = Color(0xFF002022),
-    tertiary = Color(0xFF725C00),
-    tertiaryContainer = Color(0xFFFFE07E),
-    background = Color(0xFFF9F9FF),
-    onBackground = Color(0xFF1A1B20),
-    surface = Color(0xFFF9F9FF),
-    onSurface = Color(0xFF1A1B20),
-    surfaceVariant = Color(0xFFE1E2EC),
-    onSurfaceVariant = Color(0xFF44464F),
-    outline = Color(0xFF757780),
-)
+/**
+ * "Neon Ops"-Designsystem: tiefe Blautöne mit Neon-Grün- und
+ * Neon-Pink-Akzenten. Die App ist bewusst immer dunkel.
+ */
+object Neon {
+    // Hintergründe (tiefes Mitternachtsblau)
+    val bgTop = Color(0xFF030714)
+    val bgMid = Color(0xFF071126)
+    val bgBottom = Color(0xFF0A1830)
+    val surface = Color(0xFF0A1428)
+    val surfaceRaised = Color(0xFF0E1B36)
+    val surfaceHigh = Color(0xFF13244A)
 
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFFADC6FF),
-    onPrimary = Color(0xFF002E6B),
-    primaryContainer = Color(0xFF004397),
-    onPrimaryContainer = Color(0xFFD8E2FF),
-    secondary = Color(0xFF80D4DA),
-    onSecondary = Color(0xFF00363A),
-    secondaryContainer = Color(0xFF004F53),
-    onSecondaryContainer = Color(0xFF9CF1F6),
-    tertiary = Color(0xFFE8C349),
-    tertiaryContainer = Color(0xFF564500),
-    background = Color(0xFF111318),
-    onBackground = Color(0xFFE2E2E9),
-    surface = Color(0xFF111318),
-    onSurface = Color(0xFFE2E2E9),
-    surfaceVariant = Color(0xFF44464F),
-    onSurfaceVariant = Color(0xFFC5C6D0),
-    outline = Color(0xFF8F9099),
+    // Akzente
+    val green = Color(0xFF00FFA3)
+    val greenDim = Color(0xFF0FBF7F)
+    val greenFaint = Color(0x3300FFA3)
+    val pink = Color(0xFFFF2E97)
+    val pinkDim = Color(0xFFC92277)
+    val pinkFaint = Color(0x33FF2E97)
+    val blue = Color(0xFF4D8DFF)
+
+    // Text und Linien
+    val textPrimary = Color(0xFFE8F1FF)
+    val textSecondary = Color(0xFF8DA6CC)
+    val textFaint = Color(0xFF5C729B)
+    val outline = Color(0xFF22406E)
+    val outlineFaint = Color(0xFF16294A)
+
+    // Verläufe
+    val accentGradient = Brush.horizontalGradient(listOf(green, blue, pink))
+    val backgroundGradient = Brush.verticalGradient(listOf(bgTop, bgMid, bgBottom))
+
+    fun borderGradient(alpha: Float = 1f) = Brush.linearGradient(
+        listOf(green.copy(alpha = alpha), blue.copy(alpha = alpha * 0.7f), pink.copy(alpha = alpha))
+    )
+}
+
+private val NeonColorScheme = darkColorScheme(
+    primary = Neon.green,
+    onPrimary = Color(0xFF00170D),
+    primaryContainer = Color(0xFF063226),
+    onPrimaryContainer = Color(0xFF9CFFD9),
+    secondary = Neon.pink,
+    onSecondary = Color(0xFF2A0016),
+    secondaryContainer = Color(0xFF3B0A26),
+    onSecondaryContainer = Color(0xFFFFB3D9),
+    tertiary = Neon.blue,
+    onTertiary = Color(0xFF001633),
+    background = Neon.bgMid,
+    onBackground = Neon.textPrimary,
+    surface = Neon.surface,
+    onSurface = Neon.textPrimary,
+    surfaceVariant = Neon.surfaceRaised,
+    onSurfaceVariant = Neon.textSecondary,
+    outline = Neon.outline,
+    outlineVariant = Neon.outlineFaint,
+    error = Color(0xFFFF5C8A),
+    onError = Color(0xFF330013),
 )
 
 @Composable
-fun SubnetCalcTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit,
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColors
-        else -> LightColors
-    }
-
+fun SubnetCalcTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = NeonColorScheme,
         typography = Typography(),
         content = content,
     )

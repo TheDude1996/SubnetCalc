@@ -14,13 +14,18 @@ gebaut mit **Kotlin**, **Jetpack Compose** und **Material 3**.
   - Anzahl nutzbarer Hosts und Gesamtadressen
   - Netzmaske, Wildcard-Maske und Binärdarstellung
   - Adresstyp (Privat/Öffentlich/Loopback/APIPA/CGN/…) und Adressklasse (A–E)
-- **Alle möglichen Subnetze**: Das eingegebene Netz lässt sich per Slider in
-  kleinere Subnetze aufteilen — die App listet jedes Subnetz mit Netzadresse,
-  Host-Bereich und Broadcast auf (performant auch bei zehntausenden Subnetzen).
+- **Alle möglichen Subnetze**: Das eingegebene Netz lässt sich aufteilen —
+  wahlweise per Slider über die neue Präfixlänge **oder über die Anzahl
+  benötigter Hosts pro Subnetz** (die App ermittelt dann das kleinste passende
+  Subnetz). Jedes Subnetz wird mit Netzadresse, Host-Bereich und Broadcast
+  aufgelistet (performant auch bei zehntausenden Subnetzen).
 - Sonderfälle korrekt behandelt: `/31` (RFC 3021, Punkt-zu-Punkt) und `/32`
   (Hostroute).
-- **Modernes Design**: Material 3, dynamische Farben (Android 12+),
-  automatischer Hell-/Dunkelmodus, Edge-to-Edge.
+- **Eigenes „Neon Ops“-Design**: durchgehend dunkle Mitternachtsblau-Töne mit
+  Neon-Grün- und Neon-Pink-Akzenten — Verlaufshintergrund, leuchtende
+  Gradient-Rahmen mit Puls-Animation, Monospace-Typografie und eine
+  **Bit-Visualisierung**, die Netzanteil (grün) und Hostanteil (pink) der
+  Adresse bitgenau zeigt. Material 3, Edge-to-Edge.
 
 ## Aufbau
 
@@ -43,7 +48,13 @@ Die APK liegt danach unter `app/build/outputs/apk/debug/app-debug.apk`.
 ## CI
 
 Bei jedem Push baut GitHub Actions die App, führt die Unit-Tests aus und lädt
-die Debug-APK als Artefakt hoch (Actions → Lauf auswählen → Artifacts →
-`SubnetCalc-debug`).
+die signierte Release-APK als Artefakt hoch (Actions → Lauf auswählen →
+Artifacts → `SubnetCalc-release`). Die Versionsnummer zählt mit jedem Lauf
+hoch, sodass sich jede APK als Update über die vorherige installieren lässt.
+
+Die Signatur stammt aus vier Repository-Secrets (Settings → Secrets and
+variables → Actions): `KEYSTORE_BASE64` (Keystore, Base64-kodiert),
+`KEYSTORE_PASSWORD`, `KEY_ALIAS` und `KEY_PASSWORD`. Fehlen sie (etwa in
+Forks), baut CI ersatzweise eine Debug-APK `SubnetCalc-debug`.
 
 Mindest-Android-Version: 8.0 (API 26).

@@ -83,6 +83,27 @@ object SubnetCalculator {
     fun broadcastAddress(ip: Long, prefix: Int): Long =
         networkAddress(ip, prefix) or (prefixToMask(prefix).inv() and 0xFFFFFFFFL)
 
+    /** Nutzbare Hosts je Subnetz für eine Präfixlänge (/31 nach RFC 3021, /32 Hostroute). */
+    fun usableHosts(prefix: Int): Long = when {
+        prefix >= 32 -> 1L
+        prefix == 31 -> 2L
+        else -> (1L shl (32 - prefix)) - 2
+    }
+
+    /**
+     * Längster Präfix (= kleinstes Subnetz), dessen Subnetze mindestens
+     * [hosts] nutzbare Hosts bieten. 1 Host -> /32, 2 Hosts -> /31 (RFC 3021),
+     * 3 Hosts -> /29 usw. Liefert null, wenn die Anzahl ungültig ist oder
+     * nicht einmal in /0 passt.
+     */
+    fun prefixForHosts(hosts: Long): Int? {
+        if (hosts < 1) return null
+        for (prefix in 32 downTo 0) {
+            if (usableHosts(prefix) >= hosts) return prefix
+        }
+        return null
+    }
+
     /** Berechnet alle Kennwerte des Subnetzes, in dem die Adresse liegt. */
     fun calculate(ip: Long, prefix: Int): SubnetInfo {
         val mask = prefixToMask(prefix)
@@ -90,10 +111,10 @@ object SubnetCalculator {
         val wildcard = mask.inv() and 0xFFFFFFFFL
         val broadcast = network or wildcard
         val total = 1L shl (32 - prefix)
-        val (first, last, usable) = when {
-            prefix >= 32 -> Triple(network, network, 1L)
-            prefix == 31 -> Triple(network, broadcast, 2L) // RFC 3021: Punkt-zu-Punkt
-            else -> Triple(network + 1, broadcast - 1, total - 2)
+        val usable = usableHosts(prefix)
+        val (first, last) = when {
+            prefix >= 31 -> Pair(network, broadcast)
+            else -> Pair(network + 1, broadcast - 1)
         }
         return SubnetInfo(
             ip = ip,
@@ -133,22 +154,42 @@ object SubnetCalculator {
         }
     }
 
-    /** Adresstyp als deutsche Beschreibung (Privat, Öffentlich, Loopback, ...). */
-    fun classify(ip: Long): String {
-        fun inBlock(net: String, prefix: Int): Boolean {
-            val netVal = parseIpv4(net)!!
-            return (ip and prefixToMask(prefix)) == netVal
-        }
-        return when {
-            inBlock("10.0.0.0", 8) -> "Privat (RFC 1918)"
-            inBlock("172.16.0.0", 12) -> "Privat (RFC 1918)"
-            inBlock("192.168.0.0", 16) -> "Privat (RFC 1918)"
-            inBlock("127.0.0.0", 8) -> "Loopback"
-            inBlock("169.254.0.0", 16) -> "Link-Local (APIPA)"
-            inBlock("100.64.0.0", 10) -> "Carrier-Grade NAT (RFC 6598)"
-            inBlock("224.0.0.0", 4) -> "Multicast"
-            inBlock("240.0.0.0", 4) -> "Reserviert"
-            else -> "Öffentlich"
-        }
+    private data class Block(val net: Long, val prefix: Int, val label: String) {
+        val last: Long get() = net or (SubnetCalculator.prefixToMask(prefix).inv() and 0xFFFFFFFFL)
+        fun contains(ip: Long): Boolean = (ip and SubnetCalculator.prefixToMask(prefix)) == net
+    }
+
+    private val specialBlocks: List<Block> = listOf(
+        Block(parseIpv4("10.0.0.0")!!, 8, "Privat (RFC 1918)"),
+        Block(parseIpv4("172.16.0.0")!!, 12, "Privat (RFC 1918)"),
+        Block(parseIpv4("192.168.0.0")!!, 16, "Privat (RFC 1918)"),
+        Block(parseIpv4("127.0.0.0")!!, 8, "Loopback"),
+        Block(parseIpv4("169.254.0.0")!!, 16, "Link-Local (APIPA)"),
+        Block(parseIpv4("100.64.0.0")!!, 10, "Carrier-Grade NAT (RFC 6598)"),
+        Block(parseIpv4("0.0.0.0")!!, 8, "Reserviert (0.0.0.0/8)"),
+        Block(parseIpv4("192.0.2.0")!!, 24, "Dokumentation (RFC 5737)"),
+        Block(parseIpv4("198.51.100.0")!!, 24, "Dokumentation (RFC 5737)"),
+        Block(parseIpv4("203.0.113.0")!!, 24, "Dokumentation (RFC 5737)"),
+        Block(parseIpv4("198.18.0.0")!!, 15, "Benchmarking (RFC 2544)"),
+        Block(parseIpv4("224.0.0.0")!!, 4, "Multicast"),
+        Block(parseIpv4("240.0.0.0")!!, 4, "Reserviert"),
+    )
+
+    /** Adresstyp einer einzelnen Adresse als deutsche Beschreibung (Privat, Öffentlich, Loopback, ...). */
+    fun classify(ip: Long): String =
+        specialBlocks.firstOrNull { it.contains(ip) }?.label ?: "Öffentlich"
+
+    /**
+     * Adresstyp eines ganzen Netzes. Ein Netz gilt nur dann als privat (bzw.
+     * Loopback usw.), wenn es vollständig im jeweiligen Block liegt.
+     * 192.0.0.0/8 ist also NICHT privat, sondern gemischt, weil es neben
+     * 192.168.0.0/16 auch öffentliche Bereiche enthält.
+     */
+    fun classifyNetwork(network: Long, prefix: Int): String {
+        val broadcast = network or (prefixToMask(prefix).inv() and 0xFFFFFFFFL)
+        specialBlocks.firstOrNull { network >= it.net && broadcast <= it.last }
+            ?.let { return it.label }
+        val overlaps = specialBlocks.any { it.net <= broadcast && it.last >= network }
+        return if (overlaps) "Gemischt (öffentliche und private/reservierte Bereiche)" else "Öffentlich"
     }
 }
