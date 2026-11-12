@@ -189,5 +189,46 @@ class SubnetCalculatorTest {
         assertEquals("Multicast", SC.classify(ip("239.255.255.250")))
         assertEquals("Reserviert", SC.classify(ip("240.0.0.1")))
         assertEquals("Öffentlich", SC.classify(ip("8.8.8.8")))
+        assertEquals("Öffentlich", SC.classify(ip("192.0.1.1")))
+        assertEquals("Dokumentation (RFC 5737)", SC.classify(ip("192.0.2.1")))
+        assertEquals("Dokumentation (RFC 5737)", SC.classify(ip("198.51.100.7")))
+        assertEquals("Dokumentation (RFC 5737)", SC.classify(ip("203.0.113.200")))
+        assertEquals("Benchmarking (RFC 2544)", SC.classify(ip("198.19.255.1")))
+        assertEquals("Reserviert (0.0.0.0/8)", SC.classify(ip("0.1.2.3")))
+    }
+
+    @Test
+    fun `klassifiziert ganze Netze nach vollstaendiger Enthaltung`() {
+        val mixed = "Gemischt (öffentliche und private/reservierte Bereiche)"
+
+        // 192.0.0.0/8 ist NICHT privat: es enthält 192.168.0.0/16, aber auch öffentliche Bereiche
+        assertEquals(mixed, SC.classifyNetwork(ip("192.0.0.0"), 8))
+
+        // Vollständig enthaltene Netze erben das Label des Blocks
+        assertEquals("Privat (RFC 1918)", SC.classifyNetwork(ip("192.168.0.0"), 16))
+        assertEquals("Privat (RFC 1918)", SC.classifyNetwork(ip("192.168.1.0"), 24))
+        assertEquals("Privat (RFC 1918)", SC.classifyNetwork(ip("10.0.0.0"), 8))
+        assertEquals("Privat (RFC 1918)", SC.classifyNetwork(ip("10.1.0.0"), 16))
+        assertEquals("Privat (RFC 1918)", SC.classifyNetwork(ip("172.16.0.0"), 12))
+        assertEquals("Privat (RFC 1918)", SC.classifyNetwork(ip("172.20.5.0"), 24))
+        assertEquals("Loopback", SC.classifyNetwork(ip("127.0.0.0"), 8))
+        assertEquals("Link-Local (APIPA)", SC.classifyNetwork(ip("169.254.0.0"), 16))
+        assertEquals("Multicast", SC.classifyNetwork(ip("224.0.0.0"), 4))
+
+        // Obernetze privater Blöcke sind gemischt
+        assertEquals(mixed, SC.classifyNetwork(ip("10.0.0.0"), 7))
+        assertEquals(mixed, SC.classifyNetwork(ip("172.0.0.0"), 8))
+        assertEquals(mixed, SC.classifyNetwork(ip("0.0.0.0"), 0))
+
+        // 172.32.0.0/12 liegt direkt hinter dem privaten Block und ist öffentlich
+        assertEquals("Öffentlich", SC.classifyNetwork(ip("172.32.0.0"), 12))
+
+        // Rein öffentliche Netze
+        assertEquals("Öffentlich", SC.classifyNetwork(ip("8.0.0.0"), 8))
+        assertEquals("Öffentlich", SC.classifyNetwork(ip("1.2.3.0"), 24))
+
+        // Einzeladressen (/32)
+        assertEquals("Privat (RFC 1918)", SC.classifyNetwork(ip("192.168.1.1"), 32))
+        assertEquals("Öffentlich", SC.classifyNetwork(ip("8.8.8.8"), 32))
     }
 }

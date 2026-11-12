@@ -240,7 +240,7 @@ private fun ResultCard(info: SubnetInfo) {
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Text(
-                text = "${sc.classify(info.ip)} · Klasse ${sc.ipClass(info.ip)}",
+                text = "${sc.classifyNetwork(info.network, info.prefix)} · Klasse ${sc.ipClass(info.network)}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
             )
