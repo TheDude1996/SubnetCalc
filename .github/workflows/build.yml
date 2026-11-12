@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -44,6 +46,20 @@ jobs:
         with:
           name: SubnetCalc-release
           path: app/build/outputs/apk/release/app-release.apk
+
+      # Jeder Build auf dem Standard-Branch sowie jeder manuell gestartete
+      # Lauf wird als GitHub-Release mit der signierten APK veröffentlicht.
+      - name: GitHub-Release veröffentlichen
+        if: env.KEYSTORE_FILE != '' && (github.ref_name == github.event.repository.default_branch || github.event_name == 'workflow_dispatch')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="1.0.${GITHUB_RUN_NUMBER}"
+          cp app/build/outputs/apk/release/app-release.apk "SubnetCalc-${VERSION}.apk"
+          gh release create "v${VERSION}" "SubnetCalc-${VERSION}.apk" \
+            --target "$GITHUB_SHA" \
+            --title "SubnetCalc ${VERSION}" \
+            --generate-notes
 
       # Ohne Secrets (z. B. in Forks) gibt es ersatzweise eine Debug-APK,
       # die sich aber nicht als Update installieren lässt.

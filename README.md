@@ -52,6 +52,9 @@ die signierte Release-APK als Artefakt hoch (Actions → Lauf auswählen →
 Artifacts → `SubnetCalc-release`). Die Versionsnummer zählt mit jedem Lauf
 hoch, sodass sich jede APK als Update über die vorherige installieren lässt.
 
+Builds auf dem Standard-Branch und manuell gestartete Läufe werden zusätzlich als
+[GitHub-Release](../../releases) mit der APK veröffentlicht.
+
 Die Signatur stammt aus vier Repository-Secrets (Settings → Secrets and
 variables → Actions): `KEYSTORE_BASE64` (Keystore, Base64-kodiert),
 `KEYSTORE_PASSWORD`, `KEY_ALIAS` und `KEY_PASSWORD`. Fehlen sie (etwa in
